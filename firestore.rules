@@ -1,0 +1,235 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: members
+    // Document ID: CHU-XXXXX (generated)
+    // Fields:
+    //   - id: string (required) - CHU-XXXXX
+    //   - title: string (optional)
+    //   - firstName: string (required) - Other Names
+    //   - lastName: string (required) - Surname
+    //   - otherNames: string (optional)
+    //   - gender: string (required) - Male/Female
+    //   - dateOfBirth: string (required)
+    //   - placeOfBirth: string (optional)
+    //   - dayBorn: string (optional)
+    //   - homeTown: string (optional)
+    //   - region: string (optional)
+    //   - country: string (optional)
+    //   - languagesSpoken: string (optional)
+    //   - maritalStatus: string (optional)
+    //   - typeOfMarriage: string (optional)
+    //   - dateOfMarriage: string (optional)
+    //   - placeOfMarriage: string (optional)
+    //   - spouseName: string (optional)
+    //   - children: list (optional) - array of MemberChild objects
+    //   - father: map (optional) - MemberParent object
+    //   - mother: map (optional) - MemberParent object
+    //   - nextOfKin: string (optional)
+    //   - nextOfKinPhone: string (optional)
+    //   - contactPersonFamilyName: string (optional)
+    //   - contactPersonFamilyTel: string (optional)
+    //   - educationLevel: string (optional)
+    //   - occupationProfession: string (optional)
+    //   - membershipDate: string (required)
+    //   - groupMinistry: string (optional)
+    //   - generalGroup: string (optional)
+    //   - position: string (optional)
+    //   - effectiveDate: string (optional)
+    //   - relDenomination: string (optional)
+    //   - isBaptized: bool (optional)
+    //   - isCommunicant: bool (optional)
+    //   - baptismDate: string (optional)
+    //   - baptismPlace: string (optional)
+    //   - baptismMinisterName: string (optional)
+    //   - confirmationDate: string (optional)
+    //   - confirmationPlace: string (optional)
+    //   - confirmationMinisterName: string (optional)
+    //   - housePhoneNumber: string (optional)
+    //   - cellPhoneNumber: string (required)
+    //   - email: string (optional)
+    //   - residenceArea: string (optional)
+    //   - address: string (optional) - Residence Address
+    //   - gpsAddress: string (optional)
+    //   - postalAddress: string (optional)
+    //   - membershipStatus: string (required) - Active/Inactive/Visitor/Deceased
+    //   - householdId: string (optional)
+    //   - role: string (required) - HouseholdRole
+    //   - department: string (optional)
+    //   - photo: string (optional) - Base64 or URL
+    //   - phone: string (optional)
+    //
+    // Collection: transactions
+    // Document ID: auto-generated
+    // Fields:
+    //   - memberId: string (optional)
+    //   - amount: number (required, positive)
+    //   - type: string (required, enum: ["Tithe", "Offering", "Pledge", "Other"])
+    //   - date: string (required, format: date-time)
+    //   - notes: string (optional)
+    //
+    // Collection: pledges
+    // Document ID: auto-generated
+    // Fields:
+    //   - memberId: string (required)
+    //   - totalAmount: number (required, positive)
+    //   - paidAmount: number (optional, positive)
+    //   - status: string (required, enum: ["Pending", "Partial", "Fulfilled"])
+    //   - dueDate: string (optional, format: date-time)
+    //
+    // Collection: classes
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - teacher: string (optional)
+    //   - schedule: string (optional)
+    //   - enrolledMembers: list (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        ((request.auth.token.email == "paulekuadzi@gmail.com" && request.auth.token.email_verified == true) ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin'));
+    }
+
+    function isSecretary() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Secretary';
+    }
+
+    function isMinistryLeader() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Ministry Leader';
+    }
+
+    function isFinance() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Finance';
+    }
+
+    function canEditMembership() {
+      return isSuperAdmin() || isSecretary();
+    }
+
+    function canEditSundaySchool() {
+      return isSuperAdmin() || isSecretary();
+    }
+
+    function canEditFinancials() {
+      return isSuperAdmin() || isFinance();
+    }
+
+    function canDelete() {
+      return isSuperAdmin();
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isPositive(field) {
+      return request.resource.data[field] is number && request.resource.data[field] > 0;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidMember(data) {
+      return data.firstName is string && data.firstName.size() > 0 && data.firstName.size() < 100 &&
+             data.lastName is string && data.lastName.size() > 0 && data.lastName.size() < 100 &&
+             data.cellPhoneNumber is string && data.cellPhoneNumber.size() > 0 &&
+             data.membershipStatus in ["Active", "Inactive", "Visitor", "Deceased"];
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.email is string &&
+             data.role in ["Super Admin", "Secretary", "Ministry Leader", "Finance", "User"];
+    }
+
+    function isValidTransaction(data) {
+      return data.amount is number && data.amount > 0 &&
+             data.type in ["Tithe", "Offering", "Pledge", "Other"] &&
+             isValidDateString(data.date);
+    }
+
+    function isValidPledge(data) {
+      return data.memberId is string &&
+             data.totalAmount is number && data.totalAmount > 0 &&
+             data.status in ["Pending", "Partial", "Fulfilled"];
+    }
+
+    function isValidClass(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId && 
+                    isValidUser(request.resource.data) &&
+                    (request.resource.data.role == 'User' || 
+                     (request.resource.data.role == 'Super Admin' && request.auth.token.email == "paulekuadzi@gmail.com"));
+      allow update: if isSuperAdmin();
+    }
+
+    match /members/{memberId} {
+      allow read: if isSuperAdmin() || isSecretary() || isFinance() || (isMinistryLeader() && resource.data.groupMinistry == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ministry);
+      allow create, update: if canEditMembership() && isValidMember(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /households/{householdId} {
+      allow read: if isSuperAdmin() || isSecretary() || isFinance() || isMinistryLeader();
+      allow create, update: if canEditMembership();
+      allow delete: if canDelete();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSuperAdmin() || isSecretary() || isFinance();
+      allow create, update: if canEditFinancials() && isValidTransaction(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /pledges/{pledgeId} {
+      allow read: if isSuperAdmin() || isSecretary() || isFinance();
+      allow create, update: if canEditFinancials() && isValidPledge(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /classes/{classId} {
+      allow read: if isSuperAdmin() || isSecretary() || isFinance() || (isMinistryLeader() && resource.data.name == getUserData().ministry);
+      allow create, update: if canEditSundaySchool() && isValidClass(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

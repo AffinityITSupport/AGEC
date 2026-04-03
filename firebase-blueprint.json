@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "Member": {
+      "title": "Member",
+      "description": "A member of the congregation",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive", "Visitor"] },
+        "joinedDate": { "type": "string", "format": "date-time" },
+        "photoUrl": { "type": "string" },
+        "gpsAddress": { "type": "string" },
+        "groupMinistry": { "type": "string" }
+      },
+      "required": ["firstName", "lastName", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "An application user with specific roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["Super Admin", "Secretary", "Ministry Leader", "Finance", "User"] },
+        "ministry": { "type": "string", "description": "The ministry this user leads (if Ministry Leader)" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction (tithe, offering, etc.)",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["Tithe", "Offering", "Pledge", "Other"] },
+        "date": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" }
+      },
+      "required": ["amount", "type", "date"]
+    },
+    "Pledge": {
+      "title": "Pledge",
+      "description": "A financial pledge from a member",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Partial", "Fulfilled"] },
+        "dueDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["memberId", "totalAmount", "status"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "A Sunday School class or group",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "teacher": { "type": "string" },
+        "schedule": { "type": "string" },
+        "enrolledMembers": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "memberTitles": { "type": "array", "items": { "type": "string" } },
+        "departments": { "type": "array", "items": { "type": "string" } },
+        "teams": { "type": "array", "items": { "type": "string" } },
+        "transactionTypes": { "type": "array", "items": { "type": "string" } },
+        "countries": { "type": "array", "items": { "type": "string" } },
+        "regions": { "type": "array", "items": { "type": "string" } },
+        "educationLevels": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "firestore": {
+    "/members": { "schema": "Member", "description": "Collection of church members" },
+    "/users": { "schema": "User", "description": "Collection of application users" },
+    "/transactions": { "schema": "Transaction", "description": "Collection of financial transactions" },
+    "/pledges": { "schema": "Pledge", "description": "Collection of member pledges" },
+    "/classes": { "schema": "Class", "description": "Collection of Sunday School classes" },
+    "/settings": { "schema": "Settings", "description": "Global application settings" }
+  }
+}
