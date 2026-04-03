@@ -148,6 +148,28 @@ export interface SundaySchoolClass {
   description?: string;
 }
 
+export interface BudgetItem {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  createdAt: string;
+}
+
+export interface Budget {
+  id: string;
+  itemId: string;
+  itemName: string;
+  category: string;
+  amount: number;
+  currency: Currency;
+  year: number;
+  month?: number; // 1-12
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppState {
   members: Member[];
   households: Household[];

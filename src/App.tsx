@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Membership from "./pages/Membership";
 import Financials from "./pages/Financials";
+import Budgets from "./pages/Budgets";
 import Groups from "./pages/Groups";
 import Reporting from "./pages/Reporting";
 import Settings from "./pages/Settings";
@@ -24,6 +25,7 @@ export default function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/membership" element={<Membership />} />
                   <Route path="/financials" element={<Financials />} />
+                  <Route path="/budgets" element={<Budgets />} />
                   <Route path="/groups" element={<Groups />} />
                   <Route path="/reporting" element={<Reporting />} />
                   <Route path="/settings" element={<Settings />} />

@@ -23,7 +23,8 @@ import {
   Lock,
   CheckCircle2,
   AlertCircle,
-  Type
+  Type,
+  Wallet
 } from "lucide-react";
 import { toast } from "sonner";
 import { db, auth } from "../firebase";
@@ -102,6 +103,10 @@ export default function Settings() {
   const [educationLevels, setEducationLevels] = useState<string[]>([]);
   const [newEducationLevel, setNewEducationLevel] = useState("");
 
+  // Tab: Budget Categories State
+  const [budgetCategories, setBudgetCategories] = useState<string[]>([]);
+  const [newBudgetCategory, setNewBudgetCategory] = useState("");
+
   // Tab 9: Marital Status State
   const [maritalStatuses, setMaritalStatuses] = useState<string[]>([]);
   const [newMaritalStatus, setNewMaritalStatus] = useState("");
@@ -132,6 +137,7 @@ export default function Settings() {
         countries: ["Ghana", "Nigeria", "Togo", "Benin", "Ivory Coast", "USA", "UK", "Canada"],
         regions: ["Greater Accra", "Ashanti", "Central", "Eastern", "Western", "Volta", "Northern", "Upper East", "Upper West", "Bono", "Bono East", "Ahafo", "Savannah", "North East", "Oti", "Western North"],
         educationLevels: ["None", "Primary", "JHS", "SHS", "Vocational", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
+        budgetCategories: ["Operations", "Missions", "Welfare", "Infrastructure", "Events", "Salaries", "Other"],
         maritalStatuses: ["Single", "Married", "Divorced", "Widowed"],
         daysOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
       };
@@ -146,6 +152,7 @@ export default function Settings() {
         if (data.countries) setCountries(data.countries);
         if (data.regions) setRegions(data.regions);
         if (data.educationLevels) setEducationLevels(data.educationLevels);
+        if (data.budgetCategories) setBudgetCategories(data.budgetCategories);
         if (data.maritalStatuses) setMaritalStatuses(data.maritalStatuses);
         if (data.daysOfWeek) setDaysOfWeek(data.daysOfWeek);
 
@@ -393,6 +400,25 @@ export default function Settings() {
     }
   };
 
+  const addBudgetCategory = async () => {
+    if (newBudgetCategory.trim() && !budgetCategories.includes(newBudgetCategory.trim())) {
+      const updatedCats = [...budgetCategories, newBudgetCategory.trim()];
+      const success = await saveSettings({ budgetCategories: updatedCats });
+      if (success) {
+        setNewBudgetCategory("");
+        toast.success(`Budget category "${newBudgetCategory}" added.`);
+      }
+    }
+  };
+
+  const deleteBudgetCategory = async (name: string) => {
+    const updatedCats = budgetCategories.filter(c => c !== name);
+    const success = await saveSettings({ budgetCategories: updatedCats });
+    if (success) {
+      toast.info(`Budget category "${name}" removed.`);
+    }
+  };
+
   const addMaritalStatus = async () => {
     if (newMaritalStatus.trim() && !maritalStatuses.includes(newMaritalStatus.trim())) {
       const updatedStatuses = [...maritalStatuses, newMaritalStatus.trim()];
@@ -473,6 +499,9 @@ export default function Settings() {
               </TabsTrigger>
               <TabsTrigger value="education" className="flex items-center gap-2 px-4 py-2 whitespace-nowrap">
                 <CheckCircle2 className="h-4 w-4" /> Education
+              </TabsTrigger>
+              <TabsTrigger value="budgetCategories" className="flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <Wallet className="h-4 w-4" /> Budget Categories
               </TabsTrigger>
               <TabsTrigger value="marital" className="flex items-center gap-2 px-4 py-2 whitespace-nowrap">
                 <UsersIcon className="h-4 w-4" /> Marital Status
@@ -811,6 +840,60 @@ export default function Settings() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={() => deleteEducationLevel(level)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="budgetCategories" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Budget Categories</CardTitle>
+              <CardDescription>Manage the categories available for budget items (e.g., Operations, Missions).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="New category name..." 
+                  value={newBudgetCategory}
+                  onChange={(e) => setNewBudgetCategory(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addBudgetCategory()}
+                />
+                <Button onClick={addBudgetCategory} className="gap-2">
+                  <Plus className="h-4 w-4" /> Add
+                </Button>
+              </div>
+
+              <div className="grid gap-2">
+                {budgetCategories.map((cat) => (
+                  <div key={cat} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <span className="font-medium">{cat}</span>
+                    
+                    <div className="flex items-center gap-1">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the "{cat}" budget category. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteBudgetCategory(cat)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                               Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>

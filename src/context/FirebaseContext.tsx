@@ -15,6 +15,7 @@ interface FirebaseContextType {
   canEditMembership: boolean;
   canEditSundaySchool: boolean;
   canEditFinancials: boolean;
+  canManageBudgets: boolean;
   canDelete: boolean;
   canExport: boolean;
   login: () => Promise<void>;
@@ -79,6 +80,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const canEditMembership = isSuperAdmin || isSecretary;
   const canEditSundaySchool = isSuperAdmin || isSecretary;
   const canEditFinancials = isSuperAdmin || isFinance;
+  const canManageBudgets = isSuperAdmin || isFinance;
   const canDelete = isSuperAdmin;
   const canExport = isSuperAdmin || isFinance;
 
@@ -112,6 +114,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       canEditMembership,
       canEditSundaySchool,
       canEditFinancials,
+      canManageBudgets,
       canDelete,
       canExport,
       login, 

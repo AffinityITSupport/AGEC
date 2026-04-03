@@ -145,6 +145,10 @@ service cloud.firestore {
       return isSuperAdmin() || isFinance();
     }
 
+    function canManageBudgets() {
+      return isSuperAdmin() || isFinance();
+    }
+
     function canDelete() {
       return isSuperAdmin();
     }
@@ -202,6 +206,18 @@ service cloud.firestore {
       return data.name is string && data.name.size() > 0 && data.name.size() < 100;
     }
 
+    function isValidBudgetItem(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.category is string && data.category.size() > 0;
+    }
+
+    function isValidBudget(data) {
+      return data.itemId is string &&
+             data.amount is number && data.amount >= 0 &&
+             data.year is int && data.year >= 2000 && data.year <= 2100 &&
+             (!('month' in data) || (data.month is int && data.month >= 1 && data.month <= 12));
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -248,6 +264,18 @@ service cloud.firestore {
     match /classes/{classId} {
       allow read: if isSuperAdmin() || isSecretary() || isFinance() || (isMinistryLeader() && resource.data.name == getUserData().ministry);
       allow create, update: if canEditSundaySchool() && isValidClass(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /budgetItems/{itemId} {
+      allow read: if isSuperAdmin() || isFinance();
+      allow create, update: if canManageBudgets() && isValidBudgetItem(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /budgets/{budgetId} {
+      allow read: if isSuperAdmin() || isFinance();
+      allow create, update: if canManageBudgets() && isValidBudget(request.resource.data);
       allow delete: if canDelete();
     }
 

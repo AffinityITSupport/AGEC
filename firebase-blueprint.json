@@ -94,8 +94,39 @@
         "transactionTypes": { "type": "array", "items": { "type": "string" } },
         "countries": { "type": "array", "items": { "type": "string" } },
         "regions": { "type": "array", "items": { "type": "string" } },
-        "educationLevels": { "type": "array", "items": { "type": "string" } }
+        "educationLevels": { "type": "array", "items": { "type": "string" } },
+        "budgetCategories": { "type": "array", "items": { "type": "string" } }
       }
+    },
+    "BudgetItem": {
+      "title": "Budget Item",
+      "description": "A category or item that can be budgeted for",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "A budget allocation for a specific item",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["GHS", "USD", "GBP"] },
+        "year": { "type": "integer" },
+        "month": { "type": "integer" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["itemId", "amount", "currency", "year"]
     }
   },
   "firestore": {
@@ -105,6 +136,8 @@
     "/pledges": { "schema": "Pledge", "description": "Collection of member pledges" },
     "/appeals": { "schema": "Appeal", "description": "Collection of financial appeals" },
     "/classes": { "schema": "Class", "description": "Collection of Sunday School classes" },
-    "/settings": { "schema": "Settings", "description": "Global application settings" }
+    "/settings": { "schema": "Settings", "description": "Global application settings" },
+    "/budgetItems": { "schema": "BudgetItem", "description": "Master list of budget items" },
+    "/budgets": { "schema": "Budget", "description": "Allocated budgets" }
   }
 }

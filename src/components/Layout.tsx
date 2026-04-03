@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CreditCard, GraduationCap, BarChart3, Settings, Menu, X, LogOut, ChevronRight, Bell, Search, Sun, Moon, Plus, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, GraduationCap, BarChart3, Settings, Menu, X, LogOut, ChevronRight, Bell, Search, Sun, Moon, Plus, ChevronLeft, Wallet } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ const navItems = [
   { name: "Financials", path: "/financials", icon: CreditCard, color: "text-amber-500", activeBg: "bg-white/10" },
   { name: "Sunday School", path: "/groups", icon: GraduationCap, color: "text-purple-500", activeBg: "bg-white/10" },
   { name: "Reporting", path: "/reporting", icon: BarChart3, color: "text-rose-500", activeBg: "bg-white/10" },
+  { name: "Budgets", path: "/budgets", icon: Wallet, color: "text-indigo-500", activeBg: "bg-white/10" },
   { name: "Settings", path: "/settings", icon: Settings, color: "text-slate-400", activeBg: "bg-white/10" },
 ];
 
@@ -170,7 +171,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   return ["Dashboard", "Membership", "Sunday School", "Settings"].includes(item.name);
                 }
                 if (isFinance) {
-                  return ["Dashboard", "Financials", "Reporting", "Settings"].includes(item.name);
+                  return ["Dashboard", "Financials", "Budgets", "Reporting", "Settings"].includes(item.name);
                 }
                 if (isMinistryLeader) {
                   return ["Dashboard", "Membership", "Sunday School", "Settings"].includes(item.name);
