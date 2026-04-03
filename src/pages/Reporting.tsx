@@ -73,6 +73,7 @@ import {
 import { Member, FinancialRecord, SundaySchoolClass } from "../types";
 import { useEffect } from "react";
 import { ChartSkeleton, DashboardSkeleton } from "@/components/LoadingSkeleton";
+import { useFirebase } from "../context/FirebaseContext";
 
 // --- Helper Components ---
 
@@ -150,6 +151,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export default function Reporting() {
+  const { user, isSuperAdmin, isFinance } = useFirebase();
   const [members, setMembers] = useState<Member[]>([]);
   const [financialRecords, setFinancialRecords] = useState<FinancialRecord[]>([]);
   const [sundaySchoolClasses, setSundaySchoolClasses] = useState<SundaySchoolClass[]>([]);
@@ -306,6 +308,11 @@ export default function Reporting() {
   }, [members]);
 
   useEffect(() => {
+    if (!user) return;
+    if (!isSuperAdmin && !isFinance) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     
     const membersQuery = collection(db, "members");

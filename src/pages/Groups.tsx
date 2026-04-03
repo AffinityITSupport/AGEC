@@ -157,7 +157,7 @@ export default function Groups() {
     setIsLoading(true);
     
     let classesQuery;
-    if (isSuperAdmin || isSecretary || isFinance) {
+    if (isSuperAdmin || isFinance || isSecretary) {
       classesQuery = collection(db, "classes");
     } else if (isMinistryLeader && ministry) {
       classesQuery = query(collection(db, "classes"), where("className", "==", ministry));

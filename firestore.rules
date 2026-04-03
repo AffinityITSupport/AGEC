@@ -90,6 +90,17 @@ service cloud.firestore {
     //   - schedule: string (optional)
     //   - enrolledMembers: list (optional)
     //
+    // Collection: appeals
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - targetAmount: number (required, positive)
+    //   - currency: string (required, enum: ["GHS", "USD", "GBP"])
+    //   - description: string (optional)
+    //   - dueDate: string (required, format: date)
+    //   - status: string (required, enum: ["Active", "Completed", "Cancelled"])
+    //   - createdAt: string (required, format: date-time)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -170,8 +181,15 @@ service cloud.firestore {
 
     function isValidTransaction(data) {
       return data.amount is number && data.amount > 0 &&
-             data.type in ["Tithe", "Offering", "Pledge", "Other"] &&
+             data.type in ["Tithe", "Offering", "Pledge", "Pledge Payment", "Donation", "Commitment", "Other"] &&
              isValidDateString(data.date);
+    }
+
+    function isValidAppeal(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.targetAmount is number && data.targetAmount > 0 &&
+             data.currency in ["GHS", "USD", "GBP"] &&
+             data.status in ["Active", "Completed", "Cancelled"];
     }
 
     function isValidPledge(data) {
@@ -218,6 +236,12 @@ service cloud.firestore {
     match /pledges/{pledgeId} {
       allow read: if isSuperAdmin() || isSecretary() || isFinance();
       allow create, update: if canEditFinancials() && isValidPledge(request.resource.data);
+      allow delete: if canDelete();
+    }
+
+    match /appeals/{appealId} {
+      allow read: if isAuthenticated();
+      allow create, update: if canEditFinancials() && isValidAppeal(request.resource.data);
       allow delete: if canDelete();
     }
 

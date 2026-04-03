@@ -42,7 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { theme, setTheme } = useTheme();
-  const { user, loading, isAdmin, login, logout } = useFirebase();
+  const { user, loading, isSuperAdmin, isSecretary, isFinance, isMinistryLeader, login, logout } = useFirebase();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -165,7 +165,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           <ScrollArea className="flex-1 px-3 py-6">
             <nav className="space-y-1">
-              {navItems.map((item) => {
+              {navItems.filter(item => {
+                if (isSecretary) {
+                  return ["Dashboard", "Membership", "Sunday School", "Settings"].includes(item.name);
+                }
+                if (isFinance) {
+                  return ["Dashboard", "Financials", "Reporting", "Settings"].includes(item.name);
+                }
+                if (isMinistryLeader) {
+                  return ["Dashboard", "Membership", "Sunday School", "Settings"].includes(item.name);
+                }
+                return true; // Super Admin
+              }).map((item) => {
                 const isActive = location.pathname === item.path;
                 const content = (
                   <Link
@@ -322,7 +333,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                     <div className="hidden flex-col items-start text-left sm:flex">
                       <span className="text-sm font-semibold leading-none">{user.displayName}</span>
-                      <span className="text-[10px] text-muted-foreground">{isAdmin ? "Administrator" : "User"}</span>
+                      <span className="text-[10px] text-muted-foreground">{isSuperAdmin ? "Administrator" : "User"}</span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
@@ -354,7 +365,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Floating Action Button */}
-        {isAdmin && (
+        {isSuperAdmin && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

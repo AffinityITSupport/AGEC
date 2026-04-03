@@ -56,6 +56,21 @@
       },
       "required": ["memberId", "totalAmount", "status"]
     },
+    "Appeal": {
+      "title": "Appeal",
+      "description": "A financial appeal or project with a target amount",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["GHS", "USD", "GBP"] },
+        "description": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["Active", "Completed", "Cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "targetAmount", "currency", "status"]
+    },
     "Class": {
       "title": "Class",
       "description": "A Sunday School class or group",
@@ -88,6 +103,7 @@
     "/users": { "schema": "User", "description": "Collection of application users" },
     "/transactions": { "schema": "Transaction", "description": "Collection of financial transactions" },
     "/pledges": { "schema": "Pledge", "description": "Collection of member pledges" },
+    "/appeals": { "schema": "Appeal", "description": "Collection of financial appeals" },
     "/classes": { "schema": "Class", "description": "Collection of Sunday School classes" },
     "/settings": { "schema": "Settings", "description": "Global application settings" }
   }

@@ -68,7 +68,7 @@ import {
   PledgeStatus,
   Member,
   AuditLog,
-  FinancialCampaign
+  FinancialAppeal
 } from "../types";
 import { logAudit } from "../lib/audit";
 import { 
@@ -159,7 +159,7 @@ export default function Financials() {
   const { user, role, isSuperAdmin, isSecretary, isFinance, canEditFinancials, canDelete, canExport } = useFirebase();
   const [financialRecords, setFinancialRecords] = useState<FinancialRecord[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-  const [campaigns, setCampaigns] = useState<FinancialCampaign[]>([]);
+  const [appeals, setAppeals] = useState<FinancialAppeal[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("ledger");
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
@@ -171,7 +171,7 @@ export default function Financials() {
     setIsLoading(true);
     
     // Only allow access if user has appropriate role
-    if (!isSuperAdmin && !isSecretary && !isFinance) {
+    if (!isSuperAdmin && !isFinance) {
       setIsLoading(false);
       return;
     }
@@ -194,12 +194,12 @@ export default function Financials() {
       handleFirestoreError(error, OperationType.LIST, "members");
     });
 
-    const campaignsQuery = query(collection(db, "campaigns"), orderBy("createdAt", "desc"));
-    const unsubscribeCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
-      const campaignsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as FinancialCampaign));
-      setCampaigns(campaignsData);
+    const appealsQuery = query(collection(db, "appeals"), orderBy("createdAt", "desc"));
+    const unsubscribeAppeals = onSnapshot(appealsQuery, (snapshot) => {
+      const appealsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as FinancialAppeal));
+      setAppeals(appealsData);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, "campaigns");
+      handleFirestoreError(error, OperationType.LIST, "appeals");
     });
 
     const settingsDoc = doc(db, "settings", "global");
@@ -213,7 +213,7 @@ export default function Financials() {
     return () => {
       unsubscribeRecords();
       unsubscribeMembers();
-      unsubscribeCampaigns();
+      unsubscribeAppeals();
       unsubscribeSettings();
     };
   }, []);
@@ -231,8 +231,8 @@ export default function Financials() {
     pledgeTargetAmount: "" as any,
     pledgeDueDate: "",
     pledgeId: "",
-    campaignId: "",
-    campaignName: ""
+    appealId: "",
+    appealName: ""
   });
   const [memberSearch, setMemberSearch] = useState("");
 
@@ -287,19 +287,19 @@ export default function Financials() {
     );
   }, [members, memberSearch]);
 
-  const [pledgeCampaignFilter, setPledgeCampaignFilter] = useState("all");
+  const [pledgeAppealFilter, setPledgeAppealFilter] = useState("all");
 
   const filteredPledges = useMemo(() => {
     return pledges.filter(p => {
-      const matchesCampaign = pledgeCampaignFilter === "all" || p.campaignId === pledgeCampaignFilter;
-      return matchesCampaign;
+      const matchesAppeal = pledgeAppealFilter === "all" || p.appealId === pledgeAppealFilter;
+      return matchesAppeal;
     });
-  }, [pledges, pledgeCampaignFilter]);
+  }, [pledges, pledgeAppealFilter]);
 
-  const campaignSummaries = useMemo(() => {
-    return campaigns.map(c => {
-      const campaignPledges = financialRecords.filter(r => (r.type === "Pledge" || r.type === "Commitment") && r.campaignId === c.id);
-      const pledgeIds = campaignPledges.map(p => p.id);
+  const appealSummaries = useMemo(() => {
+    return appeals.map(c => {
+      const appealPledges = financialRecords.filter(r => (r.type === "Pledge" || r.type === "Commitment") && r.appealId === c.id);
+      const pledgeIds = appealPledges.map(p => p.id);
       const linkedPayments = financialRecords.filter(r => r.type === "Pledge Payment" && pledgeIds.includes(r.pledgeId || ""));
       const totalRedeemed = linkedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
       
@@ -308,7 +308,7 @@ export default function Financials() {
         totalRedeemed
       };
     });
-  }, [campaigns, financialRecords]);
+  }, [appeals, financialRecords]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,14 +341,14 @@ export default function Financials() {
           updateData.pledgeTargetAmount = Number(formData.amount) || 0;
           updateData.pledgeStatus = formData.pledgeStatus || "Pending";
           updateData.pledgeDueDate = formData.pledgeDueDate || "";
-          updateData.campaignId = formData.campaignId || "";
-          updateData.campaignName = formData.campaignName || "";
+          updateData.appealId = formData.appealId || "";
+          updateData.appealName = formData.appealName || "";
         } else if (formData.type === "Pledge Payment") {
           updateData.pledgeId = formData.pledgeId || "";
           const linkedPledge = pledges.find(p => p.id === formData.pledgeId);
           if (linkedPledge) {
-            updateData.campaignId = linkedPledge.campaignId || "";
-            updateData.campaignName = linkedPledge.campaignName || "";
+            updateData.appealId = linkedPledge.appealId || "";
+            updateData.appealName = linkedPledge.appealName || "";
           }
         } else {
           // Remove pledge fields if type is not Pledge/Commitment
@@ -356,8 +356,8 @@ export default function Financials() {
           delete updateData.pledgeTargetAmount;
           delete updateData.pledgeDueDate;
           delete updateData.pledgeId;
-          delete updateData.campaignId;
-          delete updateData.campaignName;
+          delete updateData.appealId;
+          delete updateData.appealName;
         }
 
         await updateDoc(recordRef, updateData);
@@ -389,14 +389,14 @@ export default function Financials() {
           newData.pledgeTargetAmount = Number(formData.amount) || 0;
           newData.pledgeStatus = formData.pledgeStatus || "Pending";
           newData.pledgeDueDate = formData.pledgeDueDate || "";
-          newData.campaignId = formData.campaignId || "";
-          newData.campaignName = formData.campaignName || "";
+          newData.appealId = formData.appealId || "";
+          newData.appealName = formData.appealName || "";
         } else if (formData.type === "Pledge Payment") {
           newData.pledgeId = formData.pledgeId || "";
           const linkedPledge = pledges.find(p => p.id === formData.pledgeId);
           if (linkedPledge) {
-            newData.campaignId = linkedPledge.campaignId || "";
-            newData.campaignName = linkedPledge.campaignName || "";
+            newData.appealId = linkedPledge.appealId || "";
+            newData.appealName = linkedPledge.appealName || "";
           }
         } else {
           // Remove pledge fields if type is not Pledge/Commitment
@@ -404,8 +404,8 @@ export default function Financials() {
           delete newData.pledgeTargetAmount;
           delete newData.pledgeDueDate;
           delete newData.pledgeId;
-          delete newData.campaignId;
-          delete newData.campaignName;
+          delete newData.appealId;
+          delete newData.appealName;
         }
 
         const docRef = await addDoc(collection(db, "transactions"), newData);
@@ -453,8 +453,8 @@ export default function Financials() {
         pledgeTargetAmount: "" as any,
         pledgeDueDate: "",
         pledgeId: "",
-        campaignId: "",
-        campaignName: ""
+        appealId: "",
+        appealName: ""
       });
       setActiveTab("ledger");
     } catch (error) {
@@ -528,13 +528,13 @@ export default function Financials() {
     toast.success("Ledger exported to CSV");
   };
 
-  // --- Tab 3: Pledge Tracker State ---
+  // --- Tab 3: APPEAL Tracker State ---
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
 
-  const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false);
-  const [editingCampaign, setEditingCampaign] = useState<FinancialCampaign | null>(null);
-  const [campaignFormData, setCampaignFormData] = useState<Partial<FinancialCampaign>>({
+  const [isAppealDialogOpen, setIsAppealDialogOpen] = useState(false);
+  const [editingAppeal, setEditingAppeal] = useState<FinancialAppeal | null>(null);
+  const [appealFormData, setAppealFormData] = useState<Partial<FinancialAppeal>>({
     name: "",
     targetAmount: undefined,
     currency: "GHS",
@@ -543,32 +543,32 @@ export default function Financials() {
     status: "Active"
   });
 
-  const handleCampaignSubmit = async (e: React.FormEvent) => {
+  const handleAppealSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!campaignFormData.name || !campaignFormData.targetAmount) {
+    if (!appealFormData.name || !appealFormData.targetAmount) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     try {
-      if (editingCampaign) {
-        const campaignRef = doc(db, "campaigns", editingCampaign.id);
-        await updateDoc(campaignRef, {
-          ...campaignFormData,
-          targetAmount: Number(campaignFormData.targetAmount)
+      if (editingAppeal) {
+        const appealRef = doc(db, "appeals", editingAppeal.id);
+        await updateDoc(appealRef, {
+          ...appealFormData,
+          targetAmount: Number(appealFormData.targetAmount)
         });
         toast.success("APPEAL updated successfully");
       } else {
-        await addDoc(collection(db, "campaigns"), {
-          ...campaignFormData,
-          targetAmount: Number(campaignFormData.targetAmount),
+        await addDoc(collection(db, "appeals"), {
+          ...appealFormData,
+          targetAmount: Number(appealFormData.targetAmount),
           createdAt: new Date().toISOString()
         });
         toast.success("APPEAL created successfully");
       }
-      setIsCampaignDialogOpen(false);
-      setEditingCampaign(null);
-      setCampaignFormData({
+      setIsAppealDialogOpen(false);
+      setEditingAppeal(null);
+      setAppealFormData({
         name: "",
         targetAmount: undefined,
         currency: "GHS",
@@ -577,16 +577,16 @@ export default function Financials() {
         status: "Active"
       });
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, "campaigns");
+      handleFirestoreError(error, OperationType.WRITE, "appeals");
     }
   };
 
-  const handleDeleteCampaign = async (id: string) => {
+  const handleDeleteAppeal = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "campaigns", id));
+      await deleteDoc(doc(db, "appeals", id));
       toast.success("APPEAL deleted successfully");
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `campaigns/${id}`);
+      handleFirestoreError(error, OperationType.DELETE, `appeals/${id}`);
     }
   };
 
@@ -624,7 +624,7 @@ export default function Financials() {
           {canEditFinancials && <TabsTrigger value="record">Record Transaction</TabsTrigger>}
           <TabsTrigger value="ledger">Transaction Ledger</TabsTrigger>
           <TabsTrigger value="pledges">Pledge Tracker</TabsTrigger>
-          <TabsTrigger value="campaigns">APPEALS</TabsTrigger>
+          <TabsTrigger value="appeals">APPEALS</TabsTrigger>
         </TabsList>
 
         {/* --- Tab 1: Record Transaction --- */}
@@ -782,22 +782,22 @@ export default function Financials() {
                       <div className="space-y-2">
                         <Label>Select APPEAL (Master Setup)</Label>
                         <Select 
-                          value={formData.campaignId || "none"} 
+                          value={formData.appealId || "none"} 
                           onValueChange={(val) => {
                             if (val === "none") {
                               setFormData({ 
                                 ...formData, 
-                                campaignId: "", 
-                                campaignName: "" 
+                                appealId: "", 
+                                appealName: "" 
                               });
                               return;
                             }
-                            const campaign = campaigns.find(c => c.id === val);
+                            const appeal = appeals.find(c => c.id === val);
                             setFormData({ 
                               ...formData, 
-                              campaignId: val, 
-                              campaignName: campaign ? campaign.name : "",
-                              currency: campaign ? campaign.currency : formData.currency
+                              appealId: val, 
+                              appealName: appeal ? appeal.name : "",
+                              currency: appeal ? appeal.currency : formData.currency
                             });
                           }}
                         >
@@ -806,13 +806,13 @@ export default function Financials() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">None / General Pledge</SelectItem>
-                            {campaigns.map((c) => (
+                            {appeals.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
                                 {c.name} ({c.currency} {c.targetAmount.toLocaleString()})
                               </SelectItem>
                             ))}
-                            {campaigns.length === 0 && (
-                              <SelectItem value="no-campaigns" disabled>No active APPEALS found</SelectItem>
+                            {appeals.length === 0 && (
+                              <SelectItem value="no-appeals" disabled>No active APPEALS found</SelectItem>
                             )}
                           </SelectContent>
                         </Select>
@@ -858,7 +858,7 @@ export default function Financials() {
                               const balance = Math.max(0, target - paid);
                               return (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.campaignName || "General Pledge"} - Target: {p.currency} {target.toLocaleString()} (Due: {p.currency} {balance.toLocaleString()})
+                                  {p.appealName || "General Pledge"} - Target: {p.currency} {target.toLocaleString()} (Due: {p.currency} {balance.toLocaleString()})
                                 </SelectItem>
                               );
                             })
@@ -898,8 +898,8 @@ export default function Financials() {
                         pledgeTargetAmount: "" as any,
                         pledgeDueDate: "",
                         pledgeId: "",
-                        campaignId: "",
-                        campaignName: ""
+                        appealId: "",
+                        appealName: ""
                       });
                     }}
                   >
@@ -1123,13 +1123,13 @@ export default function Financials() {
               </div>
               <div className="flex items-center gap-2">
                 <Label className="text-xs">APPEAL:</Label>
-                <Select value={pledgeCampaignFilter} onValueChange={setPledgeCampaignFilter}>
+                <Select value={pledgeAppealFilter} onValueChange={setPledgeAppealFilter}>
                   <SelectTrigger className="h-8 w-[180px] text-xs">
                     <SelectValue placeholder="All APPEALS" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All APPEALS</SelectItem>
-                    {campaigns.map(c => (
+                    {appeals.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1144,7 +1144,7 @@ export default function Financials() {
                   <EmptyState 
                     icon={Clock}
                     title="No pledges found"
-                    description={pledgeCampaignFilter === "all" ? "There are currently no active pledges or commitments found." : "No pledges found for this APPEAL."}
+                    description={pledgeAppealFilter === "all" ? "There are currently no active pledges or commitments found." : "No pledges found for this APPEAL."}
                     actionLabel="Record Pledge"
                     onAction={() => setActiveTab("record")}
                   />
@@ -1175,7 +1175,7 @@ export default function Financials() {
                         return (
                           <TableRow key={pledge.id}>
                             <TableCell className="font-medium">{pledge.memberName}</TableCell>
-                            <TableCell className="text-xs font-semibold text-primary">{pledge.campaignName || "General Pledge"}</TableCell>
+                            <TableCell className="text-xs font-semibold text-primary">{pledge.appealName || "General Pledge"}</TableCell>
                             <TableCell>{pledge.currency} {target.toLocaleString()}</TableCell>
                             <TableCell className="text-green-600 font-medium">{pledge.currency} {paid.toLocaleString()}</TableCell>
                             <TableCell className="text-red-500 font-medium">{pledge.currency} {outstanding.toLocaleString()}</TableCell>
@@ -1235,7 +1235,7 @@ export default function Financials() {
         </TabsContent>
 
         {/* --- Tab 4: APPEALS --- */}
-        <TabsContent value="campaigns">
+        <TabsContent value="appeals">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -1244,8 +1244,8 @@ export default function Financials() {
               </div>
               {canEditFinancials && (
                 <Button onClick={() => {
-                  setEditingCampaign(null);
-                  setCampaignFormData({
+                  setEditingAppeal(null);
+                  setAppealFormData({
                     name: "",
                     targetAmount: "" as any,
                     currency: "GHS",
@@ -1253,14 +1253,14 @@ export default function Financials() {
                     dueDate: format(new Date(), "yyyy-MM-dd"),
                     status: "Active"
                   });
-                  setIsCampaignDialogOpen(true);
+                  setIsAppealDialogOpen(true);
                 }}>
                   <Plus className="h-4 w-4 mr-2" /> New APPEAL
                 </Button>
               )}
             </CardHeader>
             <CardContent>
-              {campaigns.length === 0 ? (
+              {appeals.length === 0 ? (
                 <EmptyState 
                   title="No APPEALS Found" 
                   description="Create an APPEAL to start tracking master pledge targets."
@@ -1281,26 +1281,26 @@ export default function Financials() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {campaignSummaries.map((campaign) => {
-                        const progress = campaign.targetAmount > 0 ? Math.min(100, (campaign.totalRedeemed / campaign.targetAmount) * 100) : 0;
+                      {appealSummaries.map((appeal) => {
+                        const progress = appeal.targetAmount > 0 ? Math.min(100, (appeal.totalRedeemed / appeal.targetAmount) * 100) : 0;
                         return (
-                          <TableRow key={campaign.id}>
+                          <TableRow key={appeal.id}>
                             <TableCell className="font-medium">
-                              <div className="font-bold">{campaign.name}</div>
-                              {campaign.description && <div className="text-[10px] text-muted-foreground line-clamp-1">{campaign.description}</div>}
+                              <div className="font-bold">{appeal.name}</div>
+                              {appeal.description && <div className="text-[10px] text-muted-foreground line-clamp-1">{appeal.description}</div>}
                             </TableCell>
-                            <TableCell className="text-xs font-semibold">{campaign.currency} {campaign.targetAmount.toLocaleString()}</TableCell>
-                            <TableCell className="text-xs text-green-600 font-medium">{campaign.currency} {campaign.totalRedeemed.toLocaleString()}</TableCell>
+                            <TableCell className="text-xs font-semibold">{appeal.currency} {appeal.targetAmount.toLocaleString()}</TableCell>
+                            <TableCell className="text-xs text-green-600 font-medium">{appeal.currency} {appeal.totalRedeemed.toLocaleString()}</TableCell>
                             <TableCell className="w-[120px]">
                               <div className="space-y-1">
                                 <Progress value={progress} className="h-1.5" />
                                 <span className="text-[10px] text-muted-foreground">{progress.toFixed(0)}% of target</span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-xs">{campaign.dueDate}</TableCell>
+                            <TableCell className="text-xs">{appeal.dueDate}</TableCell>
                             <TableCell>
-                              <Badge variant={campaign.status === "Active" ? "default" : "secondary"} className="text-[10px] h-5">
-                                {campaign.status}
+                              <Badge variant={appeal.status === "Active" ? "default" : "secondary"} className="text-[10px] h-5">
+                                {appeal.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
@@ -1311,9 +1311,9 @@ export default function Financials() {
                                     size="icon" 
                                     className="h-8 w-8"
                                     onClick={() => {
-                                      setEditingCampaign(campaign);
-                                      setCampaignFormData(campaign);
-                                      setIsCampaignDialogOpen(true);
+                                      setEditingAppeal(appeal);
+                                      setAppealFormData(appeal);
+                                      setIsAppealDialogOpen(true);
                                     }}
                                   >
                                     <Edit className="h-3.5 w-3.5" />
@@ -1324,7 +1324,7 @@ export default function Financials() {
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-8 w-8 text-destructive"
-                                    onClick={() => handleDeleteCampaign(campaign.id)}
+                                    onClick={() => handleDeleteAppeal(appeal.id)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
@@ -1344,22 +1344,22 @@ export default function Financials() {
       </Tabs>
 
       {/* APPEAL Dialog */}
-      <Dialog open={isCampaignDialogOpen} onOpenChange={setIsCampaignDialogOpen}>
+      <Dialog open={isAppealDialogOpen} onOpenChange={setIsAppealDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{editingCampaign ? "Edit APPEAL" : "New APPEAL"}</DialogTitle>
+            <DialogTitle>{editingAppeal ? "Edit APPEAL" : "New APPEAL"}</DialogTitle>
             <DialogDescription>
               Set up a master pledge target for a specific project or APPEAL.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCampaignSubmit} className="space-y-4 py-4">
+          <form onSubmit={handleAppealSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">APPEAL Name</Label>
               <Input 
                 id="name"
                 placeholder="e.g. Chapel Project"
-                value={campaignFormData.name}
-                onChange={(e) => setCampaignFormData({ ...campaignFormData, name: e.target.value })}
+                value={appealFormData.name}
+                onChange={(e) => setAppealFormData({ ...appealFormData, name: e.target.value })}
                 required
               />
             </div>
@@ -1370,16 +1370,16 @@ export default function Financials() {
                   id="target"
                   type="number"
                   step="0.01"
-                  value={campaignFormData.targetAmount ?? ""}
-                  onChange={(e) => setCampaignFormData({ ...campaignFormData, targetAmount: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  value={appealFormData.targetAmount ?? ""}
+                  onChange={(e) => setAppealFormData({ ...appealFormData, targetAmount: e.target.value ? parseFloat(e.target.value) : undefined })}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Select 
-                  value={campaignFormData.currency} 
-                  onValueChange={(val) => setCampaignFormData({ ...campaignFormData, currency: val as Currency })}
+                  value={appealFormData.currency} 
+                  onValueChange={(val) => setAppealFormData({ ...appealFormData, currency: val as Currency })}
                 >
                   <SelectTrigger id="currency">
                     <SelectValue placeholder="Select" />
@@ -1397,16 +1397,16 @@ export default function Financials() {
               <Input 
                 id="dueDate"
                 type="date"
-                value={campaignFormData.dueDate}
-                onChange={(e) => setCampaignFormData({ ...campaignFormData, dueDate: e.target.value })}
+                value={appealFormData.dueDate}
+                onChange={(e) => setAppealFormData({ ...appealFormData, dueDate: e.target.value })}
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select 
-                value={campaignFormData.status} 
-                onValueChange={(val) => setCampaignFormData({ ...campaignFormData, status: val as any })}
+                value={appealFormData.status} 
+                onValueChange={(val) => setAppealFormData({ ...appealFormData, status: val as any })}
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select" />
@@ -1423,12 +1423,12 @@ export default function Financials() {
               <Textarea 
                 id="description"
                 placeholder="Briefly describe the purpose of this APPEAL..."
-                value={campaignFormData.description}
-                onChange={(e) => setCampaignFormData({ ...campaignFormData, description: e.target.value })}
+                value={appealFormData.description}
+                onChange={(e) => setAppealFormData({ ...appealFormData, description: e.target.value })}
               />
             </div>
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsCampaignDialogOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setIsAppealDialogOpen(false)}>Cancel</Button>
               <Button type="submit">Save APPEAL</Button>
             </DialogFooter>
           </form>

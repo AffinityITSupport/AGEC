@@ -108,7 +108,7 @@ export interface Household {
   members: string[]; // array of Member IDs
 }
 
-export interface FinancialCampaign {
+export interface FinancialAppeal {
   id: string;
   name: string;
   targetAmount: number;
@@ -132,8 +132,8 @@ export interface FinancialRecord {
   pledgeTargetAmount?: number; // for pledges only
   pledgeDueDate?: string; // for pledges only
   pledgeId?: string; // for pledge payments, links to the original pledge record
-  campaignId?: string; // links to FinancialCampaign
-  campaignName?: string; // e.g., "Chapel Project"
+  appealId?: string; // links to FinancialAppeal
+  appealName?: string; // e.g., "Chapel Project"
   notes: string;
 }
 

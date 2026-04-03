@@ -123,11 +123,11 @@ export default function Dashboard() {
         ? query(collection(db, "members"), where("groupMinistry", "==", ministry))
         : null;
 
-    const financialsQuery = (isSuperAdmin || isSecretary || isFinance)
+    const financialsQuery = (isSuperAdmin || isFinance)
       ? collection(db, "transactions")
       : null;
 
-    const classesQuery = (isSuperAdmin || isSecretary || isFinance)
+    const classesQuery = (isSuperAdmin || isFinance || isSecretary)
       ? collection(db, "classes")
       : (isMinistryLeader && ministry)
         ? query(collection(db, "classes"), where("className", "==", ministry))
@@ -462,40 +462,44 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-amber-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tithes & Offerings</CardTitle>
-            <DollarSign className="h-5 w-5 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">GHS {totalTithesOfferings.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {Number(financesChangePercent) !== 0 && (
-                <span className={cn(
-                  "font-medium inline-flex items-center",
-                  Number(financesChangePercent) > 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  <ArrowUpRight className={cn("h-3 w-3 mr-1", Number(financesChangePercent) < 0 && "rotate-90")} /> 
-                  {Math.abs(Number(financesChangePercent))}%
-                </span>
-              )}
-              {" "}vs last month
-            </p>
-          </CardContent>
-        </Card>
+        {(isSuperAdmin || isFinance) && (
+          <Card className="border-l-4 border-l-amber-500 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Tithes & Offerings</CardTitle>
+              <DollarSign className="h-5 w-5 text-amber-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">GHS {totalTithesOfferings.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {Number(financesChangePercent) !== 0 && (
+                  <span className={cn(
+                    "font-medium inline-flex items-center",
+                    Number(financesChangePercent) > 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    <ArrowUpRight className={cn("h-3 w-3 mr-1", Number(financesChangePercent) < 0 && "rotate-90")} /> 
+                    {Math.abs(Number(financesChangePercent))}%
+                  </span>
+                )}
+                {" "}vs last month
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="border-l-4 border-l-purple-600 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">S.S. Enrollment</CardTitle>
-            <GraduationCap className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sundaySchoolEnrollment}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total students enrolled
-            </p>
-          </CardContent>
-        </Card>
+        {(isSuperAdmin || isFinance || isMinistryLeader || isSecretary) && (
+          <Card className="border-l-4 border-l-purple-600 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">S.S. Enrollment</CardTitle>
+              <GraduationCap className="h-5 w-5 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sundaySchoolEnrollment}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Total students enrolled
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Charts Section */}
@@ -528,27 +532,29 @@ export default function Dashboard() {
         </Card>
 
         {/* Financial Overview */}
-        <Card className="shadow-sm border border-border">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Financial Overview</CardTitle>
-            <CardDescription>Tithe vs Offering comparison (Last 6 Months)</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={last6Months}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Legend iconType="circle" wrapperStyle={{fontSize: 12}} />
-                <Bar dataKey="tithes" name="Tithes" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="offerings" name="Offerings" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {(isSuperAdmin || isFinance) && (
+          <Card className="shadow-sm border border-border">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Financial Overview</CardTitle>
+              <CardDescription>Tithe vs Offering comparison (Last 6 Months)</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={last6Months}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{fontSize: 12}} />
+                  <Bar dataKey="tithes" name="Tithes" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="offerings" name="Offerings" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
